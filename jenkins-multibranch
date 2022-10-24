@@ -1,0 +1,256 @@
+def msg = "**Build**: [#${currentBuild.number}](${env.RUN_DISPLAY_URL}) \n"
+msg += "**Changes:**\n"
+
+if (!currentBuild.changeSets.isEmpty()) {
+    currentBuild.changeSets.first().getLogs().each {
+        msg += "- `" + it.getCommitId().substring(0, 8) + "` *" + it.getComment().substring(0, it.getComment().length()-1) + "*\n"
+    }
+}
+else {
+    msg += "no changes for this run\n"
+}
+
+if (msg.length() > 1024) msg.take(msg.length() - 1024)
+
+def dcurl = 'https://discord.com/api/webhooks/860120061208297504/xiU06dZb38fS0tC12Rxx5Xm41cd0TDG-pWV88ovkrPCAzmissDO2Kh78aW-zNahd8J39'
+def secret = 'Mejik'
+def server = 'sgnd@192.168.3.174'
+def directory = '~/staging/kontenbase-backend'
+def service = '~/staging/kontenbase-backend/services'
+def branch = 'master'
+def registry= 'registry.dumbways.microgen.id'
+def redeploy = '~/.script/kontenbasev1-backend-staging.sh'
+def redeploy_script = '~/.script/kontenbase-backend-staging.sh'
+def rurl = 'https://rancher.mejik.id/v3/project/c-nq2pk:p-qtd44/workloads/deployment:kontenbase'
+def url = 'https://rke.mejik.id/v3/project/c-944wm:p-nltl5/workloads/deployment:kontenbase'
+
+
+pipeline{
+    agent any
+    stages{
+        stage("Checkout Code") {
+           steps {
+               checkout scm
+           }
+       }
+        stage('git pull'){
+            steps{
+                sshagent([secret]) {
+                                sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+                                cd ${directory}
+                                git pull origin ${branch}
+                                exit
+                                EOF"""
+                }
+            }
+        }
+
+        stage ('auth change'){
+            when { changeset "services/auth/**"}
+            steps{
+                sshagent([secret]) {
+                                sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+                                cd ${service}/auth
+                                docker build --no-cache -t ${registry}/kontenbase/suittable-auth .
+                                docker push ${registry}/kontenbase/suittable-auth
+                                echo "'${rurl}:suittable-auth?action=redeploy' \\pwd" >> ${redeploy_script}
+                                echo "'${url}:suittable-auth?action=redeploy' \\pwd" >> ${redeploy}
+                                exit
+                                EOF"""
+                }
+            }
+        }
+
+        stage ('gateway change'){
+            when { changeset "services/gateway/**"}
+            steps{
+                sshagent([secret]) {
+                                sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+                                cd ${service}/gateway
+                                docker build --no-cache -t ${registry}/kontenbase/suittable-gateway .
+                                docker push ${registry}/kontenbase/suittable-gateway
+                                echo "'${rurl}:suittable-gateway?action=redeploy' \\pwd" >> ${redeploy_script}
+                                echo "'${url}:suittable-gateway?action=redeploy' \\pwd" >> ${redeploy}
+                                exit
+                                EOF"""
+                }
+            }
+        }
+
+        stage ('streaming change'){
+            when { changeset "services/streaming/**"}
+            steps{
+                sshagent([secret]) {
+                                sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+                                cd ${service}/streaming
+                                docker build --no-cache -t ${registry}/kontenbase/suittable-stream .
+                                docker push ${registry}/kontenbase/suittable-stream
+                                echo "'${rurl}:suittable-streaming?action=redeploy' \\pwd" >> ${redeploy_script}
+                                echo "'${url}:suittable-streaming?action=redeploy' \\pwd" >> ${redeploy}
+                                exit
+                                EOF"""
+                }
+            }
+        }
+
+        stage ('suittable-core change'){
+            when { changeset "services/suittable-core/**"}
+            steps{
+                sshagent([secret]) {
+                                sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+                                cd ${service}/suittable-core
+                                docker build --no-cache -t ${registry}/kontenbase/suittable-core .
+                                docker push ${registry}/kontenbase/suittable-core
+                                echo "'${rurl}:suittable-core?action=redeploy' \\pwd" >> ${redeploy_script}
+                                echo "'${url}:suittable-core?action=redeploy' \\pwd" >> ${redeploy}
+                                exit
+                                EOF"""
+                }
+            }
+        }
+
+        stage ('suittable-core-email change'){
+            when { changeset "services/suittable-core-email/**"}
+            steps{
+                sshagent([secret]) {
+                                sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+                                cd ${service}/suittable-core-email
+                                docker build --no-cache -t ${registry}/kontenbase/suittable-core-email .
+                                docker push ${registry}/kontenbase/suittable-core-email
+                                echo "'${rurl}:suittable-core-email?action=redeploy' \\pwd" >> ${redeploy_script}
+                                echo "'${url}:suittable-core-email?action=redeploy' \\pwd" >> ${redeploy}
+                                exit
+                                EOF"""
+                }
+            }
+        }
+
+        stage ('upload change'){
+            when { changeset "services/upload/**"}
+            steps{
+                sshagent([secret]) {
+                                sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+                                cd ${service}/upload
+                                docker build --no-cache -t ${registry}/kontenbase/suittable-upload .
+                                docker push ${registry}/kontenbase/suittable-upload
+                                echo "'${rurl}:suittable-upload?action=redeploy' \\pwd" >> ${redeploy_script}
+                                echo "'${url}:suittable-upload?action=redeploy' \\pwd" >> ${redeploy}
+                                exit
+                                EOF"""
+                }
+            }
+        }
+
+        stage ('workspace change'){
+            when { changeset "services/workspace/**"}
+            steps{
+                sshagent([secret]) {
+                                sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+                                cd ${service}/workspace
+                                docker build --no-cache -t ${registry}/kontenbase/suittable-workspace .
+                                docker push ${registry}/kontenbase/suittable-workspace
+                                echo "'${rurl}:suittable-workspace?action=redeploy' \\pwd" >> ${redeploy_script}
+                                echo "'${url}:suittable-workspace?action=redeploy' \\pwd" >> ${redeploy}
+                                exit
+                                EOF"""
+                }
+            }
+        }
+
+        stage ('subscription change'){
+            when { changeset "services/subscription/**"}
+            steps{
+                sshagent([secret]) {
+                                sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+                                cd ${service}/subscription
+                                docker build --no-cache -t ${registry}/kontenbase/suittable-subscription .
+                                docker push ${registry}/kontenbase/suittable-subscription
+                                echo "'${rurl}:suittable-subscription?action=redeploy' \\pwd" >> ${redeploy_script}
+                                echo "'${url}:suittable-subscription?action=redeploy' \\pwd" >> ${redeploy}
+                                exit
+                                EOF"""
+                }
+            }
+        }
+
+        stage ('notification change'){
+            when { changeset "services/notification/**"}
+            steps{
+                sshagent([secret]) {
+                                sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+                                cd ${service}/notification
+                                docker build --no-cache -t ${registry}/kontenbase/suittable-notification .
+                                docker push ${registry}/kontenbase/suittable-notification
+                                echo "'${rurl}:suittable-notification?action=redeploy' \\pwd" >> ${redeploy_script}
+                                echo "'${url}:suittable-notification?action=redeploy' \\pwd" >> ${redeploy}
+                                exit
+                                EOF"""
+                }
+            }
+        }
+
+        stage ('scheduler change'){
+            when { changeset "services/scheduler/**"}
+            steps{
+                sshagent([secret]) {
+                                sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+                                cd ${service}/scheduler
+                                docker build --no-cache -t ${registry}/kontenbase/suittable-scheduler .
+                                docker push ${registry}/kontenbase/suittable-scheduler
+                                echo "'${rurl}:suittable-scheduler?action=redeploy' \\pwd" >> ${redeploy_script}
+                                echo "'${url}:suittable-scheduler?action=redeploy' \\pwd" >> ${redeploy}
+                                exit
+                                EOF"""
+                }
+            }
+        }
+
+        stage ('query change'){
+            when { changeset "services/query/**"}
+            steps{
+                sshagent([secret]) {
+                                sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+                                cd ${service}/query
+                                docker build --no-cache -t ${registry}/kontenbase/kontenbase-query .
+                                docker push ${registry}/kontenbase/kontenbase-query
+                                echo "'${rurl}:kontenbase-query?action=redeploy' \\pwd" >> ${redeploy_script}
+                                echo "'${url}:kontenbase-query?action=redeploy' \\pwd" >> ${redeploy}
+                                exit
+                                EOF"""
+                }
+            }
+        }
+
+        stage ('db change'){
+            when { changeset "services/db/**"}
+            steps{
+                sshagent([secret]) {
+                                sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+                                cd ${service}/db
+                                docker build --no-cache -t ${registry}/kontenbase/kontenbase-db .
+                                docker push ${registry}/kontenbase/kontenbase-db
+                                echo "'${rurl}:kontenbase-db?action=redeploy' \\pwd" >> ${redeploy_script}
+                                echo "'${url}:kontenbase-db?action=redeploy' \\pwd" >> ${redeploy}
+                                exit
+                                EOF"""
+                }
+            }
+        }
+
+        stage ('deploy'){
+            steps{
+                sshagent([secret]) {
+                                sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+                                echo "'${rurl}:dummy?action=redeploy' \\pwd" >> ${redeploy_script}
+                                echo "'${url}:dummy?action=redeploy' \\pwd" >> ${redeploy}
+                                sed -i 's/pwd//g' ${redeploy_script}
+                                sed -i 's/pwd//g' ${redeploy}
+                                sh ${redeploy_script}
+                                sh ${redeploy}
+                                exit
+                                EOF"""
+                }
+            }
+        }
+    }
+}
