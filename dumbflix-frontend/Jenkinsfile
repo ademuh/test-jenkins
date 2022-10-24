@@ -5,6 +5,11 @@ def dir ='/home/ads/dumbflix-frontend'
 pipeline{
     agent any
     stages{
+        stage("Checkout Code") {
+           steps {
+               checkout scm
+           }
+       }
         stage('Pull test - master'){
             when{
 		branch "master"
