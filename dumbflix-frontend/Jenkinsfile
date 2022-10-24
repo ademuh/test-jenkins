@@ -12,7 +12,7 @@ pipeline{
        }
         stage('Pull test experimental'){
             when{
-		    anyof{
+		    anyOf{
 			branch "master";
 			branch "development";
 			branch "production"
