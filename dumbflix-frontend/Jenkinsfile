@@ -1,6 +1,6 @@
-def credential = 'ade-test'
-def server = 'ubuntu@172.25.150.238'
-def dir ='/home/ubuntu/dumbflix-frontend'
+def credential = 'Mejik'
+def server = 'sgnd@192.168.3.174'
+def dir ='~/test-ade/dumbflix-frontend'
 
 pipeline{
     agent any
