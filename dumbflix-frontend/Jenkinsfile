@@ -11,12 +11,6 @@ pipeline{
            }
        }
         stage('Pull test experimental'){
-            when{
-		    anyOf{
-			branch "master";
-			branch "production"
-		    }
-		}
             steps{
                 sshagent([credential]){
                     sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
@@ -24,7 +18,7 @@ pipeline{
                     git config --local user.email muhamaddestar5@gmail.com
                     git config --local user.name ademuh
 		    git remote set-url origin git@github.com:ademuh/dumbflix-frontend.git
-                    git pull
+                    git pull origin ${env.BRANCH_NAME}
                     exit
                     EOF"""
                     }
