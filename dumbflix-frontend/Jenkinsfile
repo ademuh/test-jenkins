@@ -19,7 +19,7 @@ pipeline{
                     git config --local user.name ademuh
 		    git remote set-url origin git@github.com:ademuh/dumbflix-frontend.git
                     git pull origin ${env.BRANCH_NAME}
-		    echo "My balls in your development"
+		    echo "My balls in your product these nuts"
                     exit
                     EOF"""
                     }
